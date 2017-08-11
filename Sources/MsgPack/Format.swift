@@ -552,67 +552,36 @@ extension MsgPackFormat: ExpressibleByBooleanLiteral {
     }
 }
 
+// MARK: - Constructor
+
 extension MsgPackFormat {
-//    static func from(string: Swift.String) throws -> MsgPackFormat {
-//        guard let data = string.data(using: .utf8) else {
-//            throw MsgPackEncoder.Error.notUTF8String
-//        }
-//
-//        let count = data.count
-//        if count < 0x20 {
-//            return .fixstr(data)
-//        } else if count < 0xff {
-//            return .str8(data)
-//        } else if count < 0xffff {
-//            return .str16(data)
-//        } else {
-//            return .str32(data)
-//        }
-//    }
+    static func from<U: UnsignedInteger>(positiveInteger value: U) -> MsgPackFormat {
+        if value < 0b10000000 {
+            return .uint(MsgPackFormat.UInt.positiveFix(UInt8(truncatingIfNeeded: value)))
+        } else if value <= UInt8.max {
+            return .uint(MsgPackFormat.UInt.uint8(UInt8(truncatingIfNeeded: value)))
+        } else if value <= UInt16.max {
+            return .uint(MsgPackFormat.UInt.uint16(UInt16(truncatingIfNeeded: value)))
+        } else if value <= UInt32.max {
+            return .uint(MsgPackFormat.UInt.uint32(UInt32(truncatingIfNeeded: value)))
+        } else {
+            return .uint(MsgPackFormat.UInt.uint64(UInt64(value)))
+        }
+    }
     
-//    static func from(uint value: Swift.UInt) -> MsgPackFormat {
-//        if value < 0b10000000 {
-//            return .uint(MsgPackFormat.UInt.positiveFix(UInt8(truncatingIfNeeded: value)))
-//        } else if value <= 0xff {
-//            return .uint(MsgPackFormat.UInt.uint8(UInt8(truncatingIfNeeded: value)))
-//        } else if value <= 0xffff {
-//            return .uint(MsgPackFormat.UInt.uint16(UInt16(truncatingIfNeeded: value)))
-//        } else if value <= 0xffff_ffff {
-//            return .uint(MsgPackFormat.UInt.uint32(UInt32(truncatingIfNeeded: value)))
-//        } else {
-//            return .uint(MsgPackFormat.UInt.uint64(UInt64(value)))
-//        }
-//    }
-//
-//    static func from(int value: Swift.Int) -> MsgPackFormat {
-//        if value >= 0 {
-//            return .from(uint: Swift.UInt(bitPattern: value))
-//        } else if value >= -0b00100000 {
-//            return .int(MsgPackFormat.Int.negativeFix(Int8(truncatingIfNeeded: value)))
-//        } else if value >= -0xff {
-//            return .int(MsgPackFormat.Int.int8(Int8(truncatingIfNeeded: value)))
-//        } else if value >= -0xffff {
-//            return .int(MsgPackFormat.Int.int16(Int16(truncatingIfNeeded: value)))
-//        } else if value >= -0xffff_ffff {
-//            return .int(MsgPackFormat.Int.int32(Int32(truncatingIfNeeded: value)))
-//        } else {
-//            return .int(MsgPackFormat.Int.int64(Int64(value)))
-//        }
-//    }
-//
-//    static func from(keyValues elements: (MsgPackFormat, MsgPackFormat)...) throws -> MsgPackFormat {
-//        let count = elements.count
-//        guard count < 0xffff_ffff else {
-//            throw MsgPackEncoder.Error.overflow
-//        }
-//
-//        let dict: [MsgPackFormat : MsgPackFormat] = elements.reduce(into: [:]){ $0[$1.0] = $1.1 }
-//        if count <= 16 {
-//            return .fixmap(dict)
-//        } else if count < 0xffff {
-//            return .map16(dict)
-//        } else {
-//            return .map32(dict)
-//        }
-//    }
+    static func from<S: SignedInteger>(negativeInteger value: S) throws -> MsgPackFormat {
+        if value >= 0 {
+            return .from(positiveInteger: UInt8(clamping: value))
+        } else if value >= Int8(truncatingIfNeeded: 0b11100000) {
+            return .int(MsgPackFormat.Int.negativeFix(Int8(truncatingIfNeeded: value)))
+        } else if value >= Int8.min {
+            return .int(MsgPackFormat.Int.int8(Int8(truncatingIfNeeded: value)))
+        } else if value >= Int16.min {
+            return .int(MsgPackFormat.Int.int16(Int16(truncatingIfNeeded: value)))
+        } else if value >= Int32.min {
+            return .int(MsgPackFormat.Int.int32(Int32(truncatingIfNeeded: value)))
+        } else {
+            return .int(MsgPackFormat.Int.int64(Int64(value)))
+        }
+    }
 }
