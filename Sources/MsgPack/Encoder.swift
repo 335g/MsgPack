@@ -23,18 +23,12 @@
 
 import Foundation
 
-// MARK: - MsgPackEncodable
-
-public protocol MsgPackEncodable {
-    func encode() throws -> Data
-}
-
 public enum MsgPackEncodeError: Error {
     case overflow
 }
 
-extension MsgPackObject.Nil: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension MsgPackObject.Nil {
+    fileprivate func encode() throws -> Data {
         ///
         /// `nil`
         ///
@@ -45,8 +39,8 @@ extension MsgPackObject.Nil: MsgPackEncodable {
     }
 }
 
-extension Bool: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension Bool {
+    fileprivate func encode() throws -> Data {
         ///
         /// `bool`
         ///
@@ -63,8 +57,8 @@ extension Bool: MsgPackEncodable {
     }
 }
 
-extension UInt64: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension UInt64 {
+    fileprivate func encode() throws -> Data {
         if self < 0b10000000 {
             ///
             /// `positive fixint`
@@ -121,8 +115,8 @@ extension UInt64: MsgPackEncodable {
     }
 }
 
-extension Int64: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension Int64 {
+    fileprivate func encode() throws -> Data {
         if self >= 0 {
             return try UInt64(self).encode()
         } else if self >= -0x20 {
@@ -183,8 +177,8 @@ extension Int64: MsgPackEncodable {
     }
 }
 
-extension Float: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension Float {
+    fileprivate func encode() throws -> Data {
         ///
         /// `float32`
         ///
@@ -199,8 +193,8 @@ extension Float: MsgPackEncodable {
     }
 }
 
-extension Double: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension Double {
+    fileprivate func encode() throws -> Data {
         ///
         /// `float64`
         ///
@@ -217,7 +211,7 @@ extension Double: MsgPackEncodable {
 
 // TODO: Conditional Conformance
 extension Array where Element == MsgPackObject {
-    public func encode() throws -> Data {
+    fileprivate func encode() throws -> Data {
         let count = self.count
         
         guard count < 0xffff_ffff else {
@@ -264,12 +258,12 @@ extension Array where Element == MsgPackObject {
     }
 }
 
-extension String: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension String {
+    fileprivate func encode() throws -> Data {
         let utf8 = self.utf8
         let count = UInt64(utf8.count)
         
-        guard count > 0xffff_ffff else {
+        guard count < 0xffff_ffff else {
             throw MsgPackEncodeError.overflow
         }
         
@@ -325,8 +319,8 @@ extension String: MsgPackEncodable {
     }
 }
 
-extension Data: MsgPackEncodable {
-    public func encode() throws -> Data {
+extension Data {
+    fileprivate func encode() throws -> Data {
         let count = UInt64(self.count)
         
         guard count < 0xffff_ffff else {
@@ -429,7 +423,7 @@ extension Dictionary where Key == MsgPackObject, Value == MsgPackObject {
     }
 }
 
-extension MsgPackObject: MsgPackEncodable {
+extension MsgPackObject {
     public func encode() throws -> Data {
         switch self {
         case .nil(let x):       return try x.encode()

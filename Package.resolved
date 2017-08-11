@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftCheck",
+        "repositoryURL": "https://github.com/typelift/SwiftCheck",
+        "state": {
+          "branch": "master",
+          "revision": "444c50d333c1b99ed33596420dc3f70e733055ea",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
