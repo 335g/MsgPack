@@ -260,61 +260,140 @@ protocol HasPrefix {
 
 extension MsgPackFormat.Nil: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        return 0xc0
     }
 }
 
 extension MsgPackFormat.Bool: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self {
+        case .true:
+            return 0xc3
+        case .false:
+            return 0xc2
+        }
     }
 }
 
 extension MsgPackFormat.Binary: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self.type {
+        case .bin8:
+            return 0xc4
+        case .bin16:
+            return 0xc5
+        case .bin32:
+            return 0xc6
+        }
     }
 }
 
 extension MsgPackFormat.Float: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self {
+        case .float32:
+            return 0xca
+        case .float64:
+            return 0xcb
+        }
     }
 }
 
 extension MsgPackFormat.Array: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self.type {
+        case .fix:
+            return 0b10010000 | UInt8(truncatingIfNeeded: self.elements.count)
+        case .array16:
+            return 0xdc
+        case .array32:
+            return 0xdd
+        }
     }
 }
 
 extension MsgPackFormat.String: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self.type {
+        case .fix:
+            return 0b10100000 | UInt8(self.value.utf8.count)
+        case .str8:
+            return 0xd9
+        case .str16:
+            return 0xda
+        case .str32:
+            return 0xdb
+        }
     }
 }
 
 extension MsgPackFormat.UInt: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self {
+        case .positiveFix(let x):
+            return x
+        case .uint8:
+            return 0xcc
+        case .uint16:
+            return 0xcd
+        case .uint32:
+            return 0xce
+        case .uint64:
+            return 0xcf
+        }
     }
 }
 
 extension MsgPackFormat.Int: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self {
+        case .negativeFix(let x):
+            return UInt8(truncatingIfNeeded: x)
+        case .int8:
+            return 0xd0
+        case .int16:
+            return 0xd1
+        case .int32:
+            return 0xd2
+        case .int64:
+            return 0xd3
+        }
     }
 }
 
 extension MsgPackFormat.Map: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self.type {
+        case .fix:
+            return 0b10000000 | UInt8(truncatingIfNeeded: self.dict.count)
+        case .map16:
+            return 0xde
+        case .map32:
+            return 0xdf
+        }
     }
 }
 
 extension MsgPackFormat.Ext: HasPrefix {
     var prefix: UInt8 {
-        fatalError()
+        switch self.extType {
+        case .fix1:
+            return 0xd4
+        case .fix2:
+            return 0xd5
+        case .fix4:
+            return 0xd6
+        case .fix8:
+            return 0xd7
+        case .fix16:
+            return 0xd8
+        case .ext8:
+            return 0xc7
+        case .ext16:
+            return 0xc8
+        case .ext32:
+            return 0xc9
+        }
     }
 }
 
