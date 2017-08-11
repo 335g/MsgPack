@@ -18,11 +18,27 @@ enum MsgPackFormat {
             case bin32
         }
         
+        enum EncodeError: Error {
+            case overflow
+        }
+        
         let data: Data
         let type: BinaryType
         
-        init?(data: Data) {
-            fatalError()
+        init(data: Data) throws {
+            let count = data.count
+            guard count < 0xffff_ffff else {
+                throw EncodeError.overflow
+            }
+            
+            self.data = data
+            if count < 0xff {
+                self.type = .bin8
+            } else if count < 0xffff {
+                self.type = .bin16
+            } else {
+                self.type = .bin32
+            }
         }
     }
     
@@ -38,11 +54,27 @@ enum MsgPackFormat {
             case array32
         }
         
+        enum EncodeError: Error {
+            case overflow
+        }
+        
         let elements: [MsgPackFormat]
         let type: ArrayType
         
-        init?(elements: [MsgPackFormat]) {
-            fatalError()
+        init(elements: [MsgPackFormat]) throws {
+            let count = elements.count
+            guard count < 0xffff_ffff else {
+                throw EncodeError.overflow
+            }
+            
+            self.elements = elements
+            if count < 16 {
+                self.type = .fix
+            } else if count < 0xffff {
+                self.type = .array16
+            } else {
+                self.type = .array32
+            }
         }
     }
     
@@ -54,11 +86,29 @@ enum MsgPackFormat {
             case str32
         }
         
+        enum EncodeError: Error {
+            case overflow
+        }
+        
         let value: Swift.String
         let type: StringType
         
-        init?(string: Swift.String) {
-            fatalError()
+        init(string: Swift.String) throws {
+            let count = string.utf8.count
+            guard count < 0xffff_ffff else {
+                throw EncodeError.overflow
+            }
+            
+            self.value = string
+            if count < 32 {
+                self.type = .fix
+            } else if count < 0xff {
+                self.type = .str8
+            } else if count < 0xffff {
+                self.type = .str16
+            } else {
+                self.type = .str32
+            }
         }
     }
     
@@ -85,11 +135,27 @@ enum MsgPackFormat {
             case map32
         }
         
+        enum EncodeError: Error {
+            case overflow
+        }
+        
         let dict: [MsgPackFormat : MsgPackFormat]
         let type: MapType
         
-        init?(dict: [MsgPackFormat : MsgPackFormat]) {
-            fatalError()
+        init(dict: [MsgPackFormat : MsgPackFormat]) throws {
+            let count = dict.count
+            guard count < 0xffff_ffff else {
+                throw EncodeError.overflow
+            }
+            
+            self.dict = dict
+            if count < 16 {
+                self.type = .fix
+            } else if count < 0xffff {
+                self.type = .map16
+            } else {
+                self.type = .map32
+            }
         }
     }
     
@@ -105,12 +171,37 @@ enum MsgPackFormat {
             case ext32
         }
         
+        enum EncodeError: Error {
+            case overflow
+        }
+        
         let type: Int8
         let extType: ExtType
         let data: Data
         
-        init?(data: Data) {
-            fatalError()
+        init(type: Int8, data: Data) throws {
+            let byte = data.count
+            guard byte < 0xffff_ffff else {
+                throw EncodeError.overflow
+            }
+            
+            self.type = type
+            self.data = data
+            if byte == 1 {
+                self.extType = .fix1
+            } else if byte == 2 {
+                self.extType = .fix2
+            } else if byte == 4 {
+                self.extType = .fix4
+            } else if byte == 8 {
+                self.extType = .fix8
+            } else if byte < 0xff {
+                self.extType = .ext8
+            } else if byte < 0xffff {
+                self.extType = .ext16
+            } else {
+                self.extType = .ext32
+            }
         }
     }
     

@@ -75,7 +75,7 @@ extension MsgPackEncoder.Worker: Swift.Encoder {
     }
     
     func singleValueContainer() -> SingleValueEncodingContainer {
-        fatalError()
+        return self
     }
 }
 
