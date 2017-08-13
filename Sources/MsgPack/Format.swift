@@ -771,7 +771,7 @@ extension MsgPackFormat {
     
     static func from<S: SignedInteger>(negativeInteger value: S) throws -> MsgPackFormat {
         if value >= 0 {
-            return .from(positiveInteger: UInt8(clamping: value))
+            return .from(positiveInteger: UInt8(truncatingIfNeeded: value))
         } else if value >= Int8(truncatingIfNeeded: 0b11100000) {
             return .int(MsgPackFormat.Int.negativeFix(Int8(truncatingIfNeeded: value)))
         } else if value >= Int8.min {
@@ -1208,7 +1208,7 @@ extension MsgPackFormat.Ext: Packageable {
             ///
             /// type is a signed 8-bit signed integer
             /// XXXXXXXX is a 8-bit unsigned integer which represents a length of data
-            return Data([prefix, UInt8(truncatingIfNeeded: data.count), UInt8(bitPattern: type)]) + data
+            return Data([prefix, UInt8(data.count), UInt8(bitPattern: type)]) + data
 
         case .ext16:
             /// `ext16`
@@ -1220,7 +1220,7 @@ extension MsgPackFormat.Ext: Packageable {
             ///
             /// type is a signed 8-bit signed integer
             /// YYYYYYYY_YYYYYYYY is a 16-bit big-endian unsigned integer which represents a length of data
-            var elements: [UInt8] = pack(UInt64(truncatingIfNeeded: data.count), divided: 2)
+            var elements: [UInt8] = pack(UInt64(data.count), divided: 2)
             elements.insert(prefix, at: 0)
             elements.append(UInt8(bitPattern: type))
             return Data(elements) + data
@@ -1235,7 +1235,7 @@ extension MsgPackFormat.Ext: Packageable {
             ///
             /// type is a signed 8-bit signed integer
             /// ZZZZZZZZ_ZZZZZZZZ_ZZZZZZZZ_ZZZZZZZZ is a big-endian 32-bit unsigned integer which represents a length of data
-            var elements: [UInt8] = pack(UInt64(truncatingIfNeeded: data.count), divided: 4)
+            var elements: [UInt8] = pack(UInt64(data.count), divided: 4)
             elements.insert(prefix, at: 0)
             elements.append(UInt8(bitPattern: type))
             return Data(elements) + data
