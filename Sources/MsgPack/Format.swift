@@ -58,22 +58,34 @@ enum MsgPackFormat {
             case overflow
         }
         
-        let elements: [MsgPackFormat]
-        let type: ArrayType
+        var elements: [MsgPackFormat]
+        var type: ArrayType
         
         init(elements: [MsgPackFormat]) throws {
+            self.elements = elements
+            self.type = .fix // tmp
+            
+            try updateType()
+        }
+        
+        mutating func append(_ newElement: MsgPackFormat) throws {
+            elements.append(newElement)
+            try updateType()
+        }
+        
+        private mutating func updateType() throws {
             let count = elements.count
+            
             guard count < 0xffff_ffff else {
                 throw EncodeError.overflow
             }
             
-            self.elements = elements
             if count < 16 {
-                self.type = .fix
+                type = .fix
             } else if count < 0xffff {
-                self.type = .array16
+                type = .array16
             } else {
-                self.type = .array32
+                type = .array32
             }
         }
     }
@@ -348,6 +360,28 @@ extension MsgPackFormat: Equatable {
 protocol HasPrefix {
     var prefix: UInt8 { get }
 }
+
+///
+/// The following description quotes [official documentation](https://github.com/msgpack/msgpack/blob/master/spec.md).
+///
+///
+/// ## Notation in diagrams
+///
+/// one byte:
+/// +--------+
+/// |        |
+/// +--------+
+///
+/// a variable number of bytes:
+/// +========+
+/// |        |
+/// +========+
+///
+/// variable number of objects stored in MessagePack format:
+/// +~~~~~~~~~~~~~~~~~+
+/// |                 |
+/// +~~~~~~~~~~~~~~~~~+
+///
 
 extension MsgPackFormat.Nil: HasPrefix {
     var prefix: UInt8 {
@@ -734,18 +768,6 @@ extension MsgPackFormat.Nil: ExpressibleByNilLiteral {
     }
 }
 
-extension MsgPackFormat.Bool: ExpressibleByBooleanLiteral {
-    init(booleanLiteral value: Swift.Bool) {
-        self = value ? .true : .false
-    }
-}
-
-extension MsgPackFormat: ExpressibleByBooleanLiteral {
-    init(booleanLiteral value: Swift.Bool) {
-        self = .bool(value ? true : false)
-    }
-}
-
 extension MsgPackFormat.Float: ExpressibleByFloatLiteral {
     init(floatLiteral value: Double) {
         self = .float64(value)
@@ -769,7 +791,7 @@ extension MsgPackFormat {
         }
     }
     
-    static func from<S: SignedInteger>(negativeInteger value: S) throws -> MsgPackFormat {
+    static func from<S: SignedInteger>(integer value: S) -> MsgPackFormat {
         if value >= 0 {
             return .from(positiveInteger: UInt8(truncatingIfNeeded: value))
         } else if value >= Int8(truncatingIfNeeded: 0b11100000) {
@@ -783,6 +805,10 @@ extension MsgPackFormat {
         } else {
             return .int(MsgPackFormat.Int.int64(Int64(value)))
         }
+    }
+    
+    static func from(string value: Swift.String) throws -> MsgPackFormat {
+        return .string(try MsgPackFormat.String(string: value))
     }
 }
 
