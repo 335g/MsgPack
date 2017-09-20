@@ -109,7 +109,11 @@ extension MsgPackObject: ExpressibleByFloatLiteral {
 
 extension MsgPackObject: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: Int64) {
-        self = .int(value)
+        if value >= 0 {
+            self = .uint(UInt64(value))
+        } else {
+            self = .int(value)
+        }
     }
 }
 

@@ -309,8 +309,50 @@ private func encode(binary value: Data) throws -> Data {
     }
 }
 
-private func encode(array value: [MsgPackObject]) throws -> Data {
-    fatalError()
+private func encode(array: [MsgPackObject]) throws -> Data {
+    let count = array.count
+    
+    guard count < 0xffff_ffff else {
+        throw MsgPackEncodeError.overflow
+    }
+    
+    let rest = try array.flatMap{ try $0.encode() }
+    if count <= 15 {
+        ///
+        /// `fixarray`
+        ///
+        /// fixarray stores an array whose length is upto 15 elements:
+        /// +--------+~~~~~~~~~~~~~~~~~+
+        /// |1001XXXX|    N objects    |
+        /// +--------+~~~~~~~~~~~~~~~~~+
+        ///
+        /// XXXX is a 4-bit unsigned integer which represents a size of array
+        return Data([0x90 | UInt8(count)] + rest)
+        
+    } else if count < 0xffff {
+        ///
+        /// `array16`
+        ///
+        /// array 16 stores an array whose length is upto (2^16)-1 elements:
+        /// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+        /// |  0xdc  |YYYYYYYY|YYYYYYYY|    N objects    |
+        /// +--------+--------+--------+~~~~~~~~~~~~~~~~~+
+        ///
+        /// YYYYYYYY_YYYYYYYY is a 16-bit big-endian unsigned integer which represents a size of array
+        return Data([0xdc] + pack(UInt64(count), divided: 2) + rest)
+        
+    } else {
+        ///
+        /// `array32`
+        ///
+        /// array 32 stores an array whose length is upto (2^32)-1 elements:
+        /// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+        /// |  0xdd  |ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|ZZZZZZZZ|    N objects    |
+        /// +--------+--------+--------+--------+--------+~~~~~~~~~~~~~~~~~+
+        ///
+        /// ZZZZZZZZ_ZZZZZZZZ_ZZZZZZZZ_ZZZZZZZZ is a 32-bit big-endian unsigned integer which represents a size of array
+        return Data([0xdd] + pack(UInt64(count), divided: 4) + rest)
+    }
 }
 
 private func encode(map dict: [MsgPackObject: MsgPackObject]) throws -> Data {
@@ -485,4 +527,3 @@ private func pack(_ value: UInt64, divided number: Int) -> [UInt8] {
         UInt8(truncatingIfNeeded: value >> UInt64($0))
     }
 }
-
